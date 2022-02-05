@@ -1,3 +1,4 @@
+from attr import Attribute
 import folium
 from geopy.geocoders import Nominatim
 
@@ -50,13 +51,36 @@ def convert_info(data):
 def get_coords(place):
     geolocator = Nominatim(user_agent="main.py")
     location = geolocator.geocode(place)
-    return (location.latitude, location.longitude)
+    try:
+        try:
+            try:
+                try:
+                    return (location.latitude, location.longitude)
+                except AttributeError:
+                    city=place.split(',')[0]
+                    location = geolocator.geocode(city)
+                    return (location.latitude, location.longitude)
+            except AttributeError:
+                try: 
+                    higher=place.split(',')[1]
+                    location = geolocator.geocode(higher)
+                    return (location.latitude, location.longitude)
+                except IndexError:
+                    higher=place.split(',')[-1]
+                    location = geolocator.geocode(higher)
+                    return (location.latitude, location.longitude)
+        except AttributeError:
+            higher=place.split(',')[-1]
+            location = geolocator.geocode(higher)
+            return (location.latitude, location.longitude)
+    except AttributeError:
+        return None
 
 
-
-    pass
 
 if __name__ == '__main__':
     data=info_get('locations.list')
     films=convert_info(data)
-    get_coords('New York City, New York, USA')
+    for i in films:
+        print(get_coords(i[2]), end='       ')
+        print(i[2])
