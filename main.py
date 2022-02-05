@@ -1,6 +1,9 @@
-from attr import Attribute
 import folium
+import math
 from geopy.geocoders import Nominatim
+from hypersin import my_hyper
+
+
 
 def info_get(path_to_file):
     """Read file and put them into list of rows
@@ -77,10 +80,8 @@ def get_coords(place):
         return None
 
 
-
 if __name__ == '__main__':
+    point=(49.83826, 24.02324)
+    print(point)
     data=info_get('locations.list')
     films=convert_info(data)
-    for i in films:
-        print(get_coords(i[2]), end='       ')
-        print(i[2])
