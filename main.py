@@ -52,6 +52,18 @@ def convert_info(data):
     return films
 
 def get_coords(place):
+    """Returns tuple with coords or "None" if nothing was found
+
+    Args:
+        place (str): place (for example Los Angeles, California, USA)
+
+    Returns:
+        tuple: (latitude, longitude) 
+    >>> get_coords('Los Angeles, California, USA')
+    (34.0536909, -118.242766)
+    >>> get_coords('Alessandria, Piedmont, Italy	(italy)')
+    (44.83495335, 8.745030418605868)
+    """
     geolocator = Nominatim(user_agent="main.py")
     location = geolocator.geocode(place)
     try:
@@ -80,8 +92,10 @@ def get_coords(place):
         return None
 
 
-if __name__ == '__main__':
-    point=(49.83826, 24.02324)
-    print(point)
-    data=info_get('locations.list')
-    films=convert_info(data)
+# if __name__ == '__main__':
+#     point=(49.83826, 24.02324)
+#     print(point)
+#     data=info_get('locations.list')
+#     films=convert_info(data)
+import doctest
+print(doctest.testmod())
