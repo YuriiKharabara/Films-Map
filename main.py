@@ -4,7 +4,8 @@
 import argparse
 import folium
 from geopy.geocoders import Nominatim
-from haversin import my_haver       # Функція гаверсинуса написана в додатковому модулі
+# Функція гаверсинуса написана в додатковому модулі
+from haversin import my_haver
 import haversine
 
 
@@ -68,7 +69,7 @@ def get_coords(place):
     >>> get_coords('Alessandria, Piedmont, Italy	(italy)')
     (44.83495335, 8.745030418605868)
     """
-    geolocator = Nominatim(user_agent="main.py")
+    geolocator = Nominatim(user_agent="main.py", timeout=10)
     location = geolocator.geocode(place)
     try:
         try:
@@ -186,7 +187,7 @@ def choose_ten_nearest(used_coords, latitude, longitude):
 -79.37439532076982), (42.1859079, -76.6699493), (40.6526006, -73.9497211), (35.9603948, -83.9210261)]
     """
     nearest_10 = []
-    if len(used_coords)<=10:
+    if len(used_coords) <= 10:
         for i in used_coords:
             nearest_10.append(i)
         return nearest_10
@@ -199,7 +200,7 @@ def choose_ten_nearest(used_coords, latitude, longitude):
         try:
             min_distance_index = distances.index(min(distances))
         except ValueError:
-            min_distance_index=0
+            min_distance_index = 0
         nearest_10.append(coords_for_distances[min_distance_index])
         distances[min_distance_index] += 9999999999999
     return nearest_10
@@ -238,10 +239,14 @@ def parser():
         parser: Namespace of arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("year", type=int)
-    parser.add_argument("latitude", type=float)
-    parser.add_argument("longitude", type=float)
-    parser.add_argument("path_to_dataset", type=str)
+    parser.add_argument(
+        "year", type=int, help='In what year you want to see films on the map in format ####   (2004 for example)')
+    parser.add_argument("latitude", type=float,
+                        help='latitude of the point from wich you want to start in format ##.####...')
+    parser.add_argument("longitude", type=float,
+                        help='longitude of the point from wich you want to start in format ##.####...')
+    parser.add_argument("path_to_dataset", type=str,
+                        help='Path to the file with data of films')
     return parser.parse_args()
 
 
@@ -277,7 +282,7 @@ def main():
     map.add_child(markers_of_year)
     map.add_child(lviv_films)
     map.add_child(folium.LayerControl())
-    map.save('map1.html')
+    map.save('Map.html')
 
 
 main()
