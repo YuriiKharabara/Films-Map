@@ -284,5 +284,4 @@ def main():
     map.add_child(folium.LayerControl())
     map.save('Map.html')
 
-
 main()
