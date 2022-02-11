@@ -1,8 +1,9 @@
 import folium
 import math
 from geopy.geocoders import Nominatim
-from hypersin import my_hyper
+# from hypersin import my_hyper
 
+import random
 
 
 def info_get(path_to_file):
@@ -91,11 +92,98 @@ def get_coords(place):
     except AttributeError:
         return None
 
+def choose_places(data, year):
+    data_of_year=[]
+    data_of_lviv_films=[]
+    for i in range(len(data)):
+        try:
+            if int(data[i][1]) == year:
+                data_of_year.append(data[i])
+            # if ('Lviv' in data[i][2]) and ('Kyiv' not in data[i][2]) and ('''Miners' Stories''' or 'Delirium' not in data[i][0]):
+            if 'Lviv' in data[i][2]:
+                data_of_lviv_films.append(data[i])
+        except ValueError:
+            continue
+    for i in data_of_lviv_films:
+        if my_hyper((),(get_coords(i[2])))>300000:
+            data_of_lviv_films.remove(i)
+    return (data_of_year, data_of_lviv_films)
 
-# if __name__ == '__main__':
-#     point=(49.83826, 24.02324)
-#     print(point)
-#     data=info_get('locations.list')
-#     films=convert_info(data)
-import doctest
-print(doctest.testmod())
+
+def main():
+    location1=float(input('Корди 1: '))
+    location2=float(input('Корди 2: '))
+    year=int(input('Рік: '))
+    path_to_file='locations.list'
+    data=convert_info(info_get(path_to_file))
+    choosed_places=choose_places(data, year)
+    data_of_year=choosed_places[0]
+    data_of_lviv=choosed_places[1]
+    print(len(data_of_year))
+    print(len(data_of_lviv))
+
+
+    used_coords={}
+    for i in range(len(data_of_year)):
+        try:
+            coords=get_coords(data_of_year[i][2])
+            if coords==None:
+                continue
+            if coords not in used_coords:
+                used_coords[coords]=[data_of_year[i][0]]
+            else:
+                used_coords[coords].append(data_of_year[i][0])
+            
+        except TypeError:
+            continue
+    map=folium.Map()
+    markers_of_year=folium.FeatureGroup(name=f'Films made in {year}')
+    
+    for i in used_coords:
+        markers_of_year.add_child(folium.Marker(location=[i[0], i[1]], popup=str(used_coords[i])[1:-1], icon=folium.Icon()))
+
+    used_coords_for_lviv={}
+    lviv_films=folium.FeatureGroup(name="films shot in Lviv")
+    for i in range(len(data_of_lviv)):
+        try:
+            coords=get_coords(data_of_lviv[i][2])
+            if coords==None:
+                continue
+            if coords not in used_coords_for_lviv:
+                used_coords_for_lviv[coords]=[data_of_lviv[i][0]]
+            else:
+                used_coords_for_lviv[coords].append(data_of_lviv[i][0])
+        except TypeError:
+            continue
+    for i in used_coords_for_lviv:
+        lviv_films.add_child(folium.Marker(location=[i[0], i[1]], popup=str(used_coords_for_lviv[i])[1:-1], icon=folium.Icon()))
+    map.add_child(markers_of_year)
+    map.add_child(lviv_films)
+    map.add_child(folium.LayerControl())
+    map.save('map1.html')
+    
+    
+
+
+
+
+main()
+
+
+
+
+
+
+
+
+
+
+
+
+# # if __name__ == '__main__':
+# #     point=(49.83826, 24.02324)
+# #     print(point)
+# #     data=info_get('locations.list')
+# #     films=convert_info(data)
+# import doctest
+# print(doctest.testmod())
