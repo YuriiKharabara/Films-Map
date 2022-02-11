@@ -1,9 +1,9 @@
 import folium
 import math
 from geopy.geocoders import Nominatim
-# from hypersin import my_hyper
-
+from hypersin import my_hyper    #Функція гаверсинуса написана в додатковому модулі
 import random
+import haversine
 
 
 def info_get(path_to_file):
@@ -105,8 +105,10 @@ def choose_places(data, year):
         except ValueError:
             continue
     for i in data_of_lviv_films:
-        if my_hyper((),(get_coords(i[2])))>300000:
-            data_of_lviv_films.remove(i)
+        coords_of_place=get_coords(i[2])
+        if coords_of_place!=None:
+            if haversine.haversine((49.841952, 24.0315921), coords_of_place) > 300:
+                data_of_lviv_films.remove(i)
     return (data_of_year, data_of_lviv_films)
 
 
@@ -136,10 +138,21 @@ def main():
             
         except TypeError:
             continue
-    map=folium.Map()
+    map=folium.Map(location=[location1, location2])
     markers_of_year=folium.FeatureGroup(name=f'Films made in {year}')
-    
+
+    distances=[]    
+    coords_for_distances=[]
+    nearest_10=[]
     for i in used_coords:
+        distances.append(haversine.haversine((location1, location2), i))
+        coords_for_distances.append(i)
+    while len(nearest_10)!=10:
+        min_distance_index=distances.index(min(distances))
+        nearest_10.append(coords_for_distances[min_distance_index])
+        distances[min_distance_index]+=9999999999999
+
+    for i in nearest_10:
         markers_of_year.add_child(folium.Marker(location=[i[0], i[1]], popup=str(used_coords[i])[1:-1], icon=folium.Icon()))
 
     used_coords_for_lviv={}
