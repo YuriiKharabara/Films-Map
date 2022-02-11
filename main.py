@@ -1,8 +1,7 @@
+import argparse
 import folium
-import math
 from geopy.geocoders import Nominatim
-from hypersin import my_hyper    #Функція гаверсинуса написана в додатковому модулі
-import random
+from hypersin import my_hyper  # Функція гаверсинуса написана в додатковому модулі
 import haversine
 
 
@@ -16,7 +15,7 @@ def info_get(path_to_file):
         list: All the rows from the file in list
     """
     with open(path_to_file, 'r') as file:
-        data=file.readlines()
+        data = file.readlines()
     return data
 
 
@@ -31,26 +30,27 @@ def convert_info(data):
     >>> convert_info(info_get('locations.list')[15:17])
     [('"#1 Single" ', '2006', 'New York City, New York, USA')]
     """
-    i=0
+    i = 0
     try:
         while not data[i].startswith('='):
-            i+=1
-        i+=1
+            i += 1
+        i += 1
     except IndexError:
-        i=0
-    films=[]
-    for j in range(i, len(data)-1):    
-        name=data[j].split('(')[0]
-        year=data[j].split('(')[1][:4]
-        row_for_location=data[j].split('\t')
-        amount=row_for_location.count('')
+        i = 0
+    films = []
+    for j in range(i, len(data)-1):
+        name = data[j].split('(')[0]
+        year = data[j].split('(')[1][:4]
+        row_for_location = data[j].split('\t')
+        amount = row_for_location.count('')
         for i in range(amount):
             row_for_location.remove('')
-        locations=row_for_location[1:]
-        location=' '.join(locations)
-        location=location[:-1]
+        locations = row_for_location[1:]
+        location = ' '.join(locations)
+        location = location[:-1]
         films.append((name, year, location))
     return films
+
 
 def get_coords(place):
     """Returns tuple with coords or "None" if nothing was found
@@ -73,28 +73,29 @@ def get_coords(place):
                 try:
                     return (location.latitude, location.longitude)
                 except AttributeError:
-                    city=place.split(',')[0]
+                    city = place.split(',')[0]
                     location = geolocator.geocode(city)
                     return (location.latitude, location.longitude)
             except AttributeError:
-                try: 
-                    higher=place.split(',')[1]
+                try:
+                    higher = place.split(',')[1]
                     location = geolocator.geocode(higher)
                     return (location.latitude, location.longitude)
                 except IndexError:
-                    higher=place.split(',')[-1]
+                    higher = place.split(',')[-1]
                     location = geolocator.geocode(higher)
                     return (location.latitude, location.longitude)
         except AttributeError:
-            higher=place.split(',')[-1]
+            higher = place.split(',')[-1]
             location = geolocator.geocode(higher)
             return (location.latitude, location.longitude)
     except AttributeError:
         return None
 
+
 def choose_places(data, year):
-    data_of_year=[]
-    data_of_lviv_films=[]
+    data_of_year = []
+    data_of_lviv_films = []
     for i in range(len(data)):
         try:
             if int(data[i][1]) == year:
@@ -105,92 +106,105 @@ def choose_places(data, year):
         except ValueError:
             continue
     for i in data_of_lviv_films:
-        coords_of_place=get_coords(i[2])
-        if coords_of_place!=None:
+        coords_of_place = get_coords(i[2])
+        if coords_of_place != None:
             if haversine.haversine((49.841952, 24.0315921), coords_of_place) > 300:
                 data_of_lviv_films.remove(i)
     return (data_of_year, data_of_lviv_films)
 
 
-def main():
-    location1=float(input('Корди 1: '))
-    location2=float(input('Корди 2: '))
-    year=int(input('Рік: '))
-    path_to_file='locations.list'
-    data=convert_info(info_get(path_to_file))
-    choosed_places=choose_places(data, year)
-    data_of_year=choosed_places[0]
-    data_of_lviv=choosed_places[1]
-    print(len(data_of_year))
-    print(len(data_of_lviv))
-
-
-    used_coords={}
+def create_coords_dictionary_with(data_of_year):
+    used_coords = {}
     for i in range(len(data_of_year)):
         try:
-            coords=get_coords(data_of_year[i][2])
-            if coords==None:
+            coords = get_coords(data_of_year[i][2])
+            if coords == None:
                 continue
             if coords not in used_coords:
-                used_coords[coords]=[data_of_year[i][0]]
+                used_coords[coords] = [data_of_year[i][0]]
             else:
                 used_coords[coords].append(data_of_year[i][0])
-            
+
         except TypeError:
             continue
-    map=folium.Map(location=[location1, location2])
-    markers_of_year=folium.FeatureGroup(name=f'Films made in {year}')
+    return used_coords
 
-    distances=[]    
-    coords_for_distances=[]
-    nearest_10=[]
+
+def choose_ten_nearest(used_coords, latitude, longitude):
+    distances = []
+    coords_for_distances = []
+    nearest_10 = []
     for i in used_coords:
-        distances.append(haversine.haversine((location1, location2), i))
+        distances.append(haversine.haversine((latitude, longitude), i))
         coords_for_distances.append(i)
-    while len(nearest_10)!=10:
-        min_distance_index=distances.index(min(distances))
+    while len(nearest_10) != 10:
+        min_distance_index = distances.index(min(distances))
         nearest_10.append(coords_for_distances[min_distance_index])
-        distances[min_distance_index]+=9999999999999
+        distances[min_distance_index] += 9999999999999
+    return nearest_10
 
-    for i in nearest_10:
-        markers_of_year.add_child(folium.Marker(location=[i[0], i[1]], popup=str(used_coords[i])[1:-1], icon=folium.Icon()))
 
-    used_coords_for_lviv={}
-    lviv_films=folium.FeatureGroup(name="films shot in Lviv")
+def lviv_places(data_of_lviv):
+    used_coords_for_lviv = {}
     for i in range(len(data_of_lviv)):
         try:
-            coords=get_coords(data_of_lviv[i][2])
-            if coords==None:
+            coords = get_coords(data_of_lviv[i][2])
+            if coords == None:
                 continue
             if coords not in used_coords_for_lviv:
-                used_coords_for_lviv[coords]=[data_of_lviv[i][0]]
+                used_coords_for_lviv[coords] = [data_of_lviv[i][0]]
             else:
                 used_coords_for_lviv[coords].append(data_of_lviv[i][0])
         except TypeError:
             continue
+    return used_coords_for_lviv
+
+
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("year", type=int)
+    parser.add_argument("latitude", type=float)
+    parser.add_argument("longitude", type=float)
+    parser.add_argument("path_to_dataset", type=str)
+    return parser.parse_args()
+
+
+def main():
+    args = parser()
+
+    data = convert_info(info_get(args.path_to_dataset))
+    choosed_places = choose_places(data, args.year)
+    data_of_year = choosed_places[0]
+    data_of_lviv = choosed_places[1]
+
+    # print(len(data_of_year))
+    # print(len(data_of_lviv))
+
+    used_coords = create_coords_dictionary_with(data_of_year)
+
+    map = folium.Map(location=[args.latitude, args.longitude])
+    markers_of_year = folium.FeatureGroup(name=f'Films made in {args.year}')
+
+    nearest_10 = choose_ten_nearest(used_coords, args.latitude, args.longitude)
+
+    for i in nearest_10:
+        markers_of_year.add_child(folium.Marker(
+            location=[i[0], i[1]], popup=str(used_coords[i])[1:-1], icon=folium.Icon()))
+
+    lviv_films = folium.FeatureGroup(name="films shot in Lviv")
+    used_coords_for_lviv = lviv_places(data_of_lviv)
+
     for i in used_coords_for_lviv:
-        lviv_films.add_child(folium.Marker(location=[i[0], i[1]], popup=str(used_coords_for_lviv[i])[1:-1], icon=folium.Icon()))
+        lviv_films.add_child(folium.Marker(location=[i[0], i[1]], popup=str(
+            used_coords_for_lviv[i])[1:-1], icon=folium.Icon()))
+
     map.add_child(markers_of_year)
     map.add_child(lviv_films)
     map.add_child(folium.LayerControl())
     map.save('map1.html')
-    
-    
-
-
 
 
 main()
-
-
-
-
-
-
-
-
-
-
 
 
 # # if __name__ == '__main__':
