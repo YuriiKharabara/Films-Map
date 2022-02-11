@@ -1,7 +1,10 @@
+"""Creates interactive web map of Films"""
+
+
 import argparse
 import folium
 from geopy.geocoders import Nominatim
-from hypersin import my_hyper  # Функція гаверсинуса написана в додатковому модулі
+from haversin import my_haver       # Функція гаверсинуса написана в додатковому модулі
 import haversine
 
 
@@ -94,6 +97,23 @@ def get_coords(place):
 
 
 def choose_places(data, year):
+    """Chooses from file only those which are needed(By year and Lviv)
+
+    Args:
+        data (list): data from file
+        year (int): year which should be choosen
+
+    Returns:
+        tuple: List of data of films (from one year, from Lviv)
+    >>> choose_places(convert_info(info_get('locations.list')[15:50]), 2006)
+    ([('"#1 Single" ', '2006', 'New York City, New York, USA')], [])
+    >>> choose_places(convert_info(info_get('locations.list')[937000:937200]), 2006)
+    ([('Nagyaty�r�l ', '2006', 'Odorheiu Secuiesc, Transylvania, Romania (exteriors)'), \
+('Naiching�ro ', '2006', 'Japan'), ('Nail Polish ', '2006', 'New Jersey, USA'), ('Nailed ',\
+ '2006', 'Belfast, County Antrim, Northern Ireland, UK'), ('Nailed ', '2006', \
+'Compton, California, USA'), ('Nailed! ', '2006', 'USA')], [('Najmilszy ze zlodziei ',\
+ '1913', 'Lviv, Ukraine')])
+    """
     data_of_year = []
     data_of_lviv_films = []
     for i in range(len(data)):
@@ -114,6 +134,21 @@ def choose_places(data, year):
 
 
 def create_coords_dictionary_with(data_of_year):
+    """Creates dictionary of coordinates, where coordinates are keys and films are values
+
+    Args:
+        data_of_year (list): all films from one year
+
+    Returns:
+        dict: dictionary of coordinates
+    >>> create_coords_dictionary_with([('Nagyaty�r�l ', '2006', 'Odorheiu Secuiesc, Transylvania, Romania (exteriors)'), \
+('Naiching�ro ', '2006', 'Japan'), ('Nail Polish ', '2006', 'New Jersey, USA'), ('Nailed ',\
+ '2006', 'Belfast, County Antrim, Northern Ireland, UK'), ('Nailed ', '2006', \
+'Compton, California, USA'), ('Nailed! ', '2006', 'USA')])
+    {(46.3047462, 25.2950261): ['Nagyaty�r�l '], (36.5748441, 139.2394179): ['Naiching�ro ']\
+, (40.0757384, -74.4041622): ['Nail Polish '], (54.596391, -5.9301829): ['Nailed '],\
+ (33.894927, -118.226624): ['Nailed '], (39.7837304, -100.445882): ['Nailed! ']}
+    """
     used_coords = {}
     for i in range(len(data_of_year)):
         try:
@@ -131,20 +166,56 @@ def create_coords_dictionary_with(data_of_year):
 
 
 def choose_ten_nearest(used_coords, latitude, longitude):
+    """Choose ten nearest coords from the dictionary of coords
+
+    Args:
+        used_coords (dict): Coordinates of possible popups
+        latitude (float): latitude of point from which we should count
+        longitude (float): longitude of point from which we should count
+
+    Returns:
+        list: list of coordinates which are suitable
+    >>> choose_ten_nearest({(34.0536909, -118.242766): 3746204,(36.1622767, -86.7742984)\
+: 24005170,(30.272271000000003, -97.76893453598484): 151794832,(40.7127281, -74.0060152): 352256730,(4\
+0.7127281, -74.0060152): 705885356,(41.31611085, -74.12629189225156): 1506099870,(41.7065539,\
+ -73.9283672): 2472923936,(43.648366800000005, -79.37439532076982): 4857462984,(42.1859079, -7\
+6.6699493): 7072726190,(42.1859079, -76.6699493): 9971121196,(40.6526006, -73.9497211): 13680460674,(35.960\
+3948, -83.9210261): 18339524720}, 41.31616, -74.126295)
+    [(34.0536909, -118.242766), (36.1622767, -86.7742984), (30.272271000000003, -97.76893453598484), \
+(40.7127281, -74.0060152), (41.31611085, -74.12629189225156), (41.7065539, -73.9283672), (43.648366800000005, \
+-79.37439532076982), (42.1859079, -76.6699493), (40.6526006, -73.9497211), (35.9603948, -83.9210261)]
+    """
+    nearest_10 = []
+    if len(used_coords)<=10:
+        for i in used_coords:
+            nearest_10.append(i)
+        return nearest_10
     distances = []
     coords_for_distances = []
-    nearest_10 = []
     for i in used_coords:
         distances.append(haversine.haversine((latitude, longitude), i))
         coords_for_distances.append(i)
     while len(nearest_10) != 10:
-        min_distance_index = distances.index(min(distances))
+        try:
+            min_distance_index = distances.index(min(distances))
+        except ValueError:
+            min_distance_index=0
         nearest_10.append(coords_for_distances[min_distance_index])
         distances[min_distance_index] += 9999999999999
     return nearest_10
 
 
 def lviv_places(data_of_lviv):
+    """Creates dictionary with films shot in Lviv Region
+
+    Args:
+        data_of_lviv (list): List with films shot in Lviv
+
+    Returns:
+        dict: dictionary of coordinates
+    >>> lviv_places([('Najmilszy ze zlodziei ', '1913', 'Lviv, Ukraine')])
+    {(49.841952, 24.0315921): ['Najmilszy ze zlodziei ']}
+    """
     used_coords_for_lviv = {}
     for i in range(len(data_of_lviv)):
         try:
@@ -161,6 +232,11 @@ def lviv_places(data_of_lviv):
 
 
 def parser():
+    """Parse arguments
+
+    Returns:
+        parser: Namespace of arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("year", type=int)
     parser.add_argument("latitude", type=float)
@@ -205,12 +281,3 @@ def main():
 
 
 main()
-
-
-# # if __name__ == '__main__':
-# #     point=(49.83826, 24.02324)
-# #     print(point)
-# #     data=info_get('locations.list')
-# #     films=convert_info(data)
-# import doctest
-# print(doctest.testmod())
