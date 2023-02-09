@@ -1,4 +1,4 @@
-# map_html
+# Films map
 It is a project which create web html interactive map of films with information: which year and where they were shooted.
 # Important
 There is a problem with the 
